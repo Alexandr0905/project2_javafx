@@ -14,12 +14,6 @@ import javax.imageio.ImageIO;
 import java.io.File;
 
 public class SlideRenderer {
-
-    /**
-     * Сохраняет слайд (изображение + заметки) в PNG.
-     * @param slide - объект Slide
-     * @param outFile - файл, куда сохраняем
-     */
     public static void renderToFile(DefaultSlide slide, File outFile) {
         if (slide == null || slide.getImageFile() == null || outFile == null) return;
 

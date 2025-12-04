@@ -1,5 +1,6 @@
 package com.example.project2_javafx.service;
 
+import com.example.project2_javafx.factory.SlideFactory;
 import com.example.project2_javafx.model.DefaultSlide;
 
 import java.io.*;
@@ -55,7 +56,7 @@ public class ProjectZipIO
     }
 
     // загрузка проекта
-    public static List<DefaultSlide> loadProject(File zipFile) throws Exception
+    public static List<DefaultSlide> loadProject(File zipFile, SlideFactory factory) throws Exception
     {
 
         Path tempDir = Files.createTempDirectory("myshow_load_");
@@ -76,7 +77,7 @@ public class ProjectZipIO
             File imgFile = new File(tempDir.toFile(), "slides/" + imgName);
             File noteFile = new File(tempDir.toFile(), "notes/" + imgName.replace(".png", ".txt"));
 
-            DefaultSlide slide = new DefaultSlide(imgFile);
+            DefaultSlide slide = factory.createImageSlide(imgFile);
 
             if (noteFile.exists())
             {

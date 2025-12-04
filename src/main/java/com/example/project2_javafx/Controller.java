@@ -3,6 +3,8 @@ package com.example.project2_javafx;
 //import com.example.project2_javafx.Aggregate;
 //import com.example.project2_javafx.ConcreteAggregate;
 //import com.example.project2_javafx.Iterator;
+import com.example.project2_javafx.factory.DefaultSlideFactory;
+import com.example.project2_javafx.factory.SlideFactory;
 import com.example.project2_javafx.model.DefaultSlide;
 import com.example.project2_javafx.model.Slide;
 import com.example.project2_javafx.service.ProjectZipIO;
@@ -61,6 +63,9 @@ public class Controller {
     private Stage getStage() {
         return (Stage) pane.getScene().getWindow();
     }
+
+    private SlideFactory slideFactory = new DefaultSlideFactory();
+
 
 
     @FXML
@@ -192,7 +197,7 @@ public class Controller {
             // создаём slides
             currentSlides = new ArrayList<>();
             for (File f : chosen) {
-                currentSlides.add(new DefaultSlide(f));
+                currentSlides.add(slideFactory.createImageSlide(f));
             }
 
             // создаём агрегат и итератор
@@ -310,35 +315,6 @@ public class Controller {
     }
 
 
-//    // действие нажатия на кнопку влево
-//    @FXML
-//    private void onLeft() {
-//        if (iter == null) return;
-//        Image img = iter.preview(); // движемся назад
-//        if (img != null && !img.isError()) {
-//            imageCollection.setImage(img);
-//        }
-//
-//        currentSlideNumber--;
-//        if (currentSlideNumber < 1) currentSlideNumber = totalSlides;
-//        updateSlideState();
-//    }
-//
-//    // действие нажатия на кнопку вправо
-//    @FXML
-//    private void onRight() {
-//        if (iter == null) return;
-//        Image img = iter.next(); // движемся вперёд
-//        if (img != null && !img.isError()) {
-//            imageCollection.setImage(img);
-//        }
-//
-//        currentSlideNumber++;
-//        if (currentSlideNumber > totalSlides) currentSlideNumber = 1;
-//        updateSlideState();
-//    }
-
-
     // ф-ия старта слайдшоу
     public void startSlideshow() {
         stopSlideshow();
@@ -432,7 +408,7 @@ public class Controller {
         File zip = fc.showOpenDialog(getStage());
         if (zip != null) {
             try {
-                currentSlides = ProjectZipIO.loadProject(zip);
+                currentSlides = ProjectZipIO.loadProject(zip, slideFactory);
                 slidesListView.setItems(FXCollections.observableArrayList(currentSlides));
 
                 conaggr = new ConcreteAggregate(currentSlides);
