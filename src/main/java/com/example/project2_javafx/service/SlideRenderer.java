@@ -1,5 +1,6 @@
 package com.example.project2_javafx.service;
 
+import com.example.project2_javafx.model.DefaultSlide;
 import com.example.project2_javafx.model.Slide;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.SnapshotParameters;
@@ -19,7 +20,7 @@ public class SlideRenderer {
      * @param slide - объект Slide
      * @param outFile - файл, куда сохраняем
      */
-    public static void renderToFile(Slide slide, File outFile) {
+    public static void renderToFile(DefaultSlide slide, File outFile) {
         if (slide == null || slide.getImageFile() == null || outFile == null) return;
 
         try {

@@ -23,7 +23,7 @@
            <Image fx:id="btnRight" url="@image/v2.png" />
        </fx:define>
 
-      <Button fx:id="loadCollectionBtn" layoutX="76.0" layoutY="449.0" mnemonicParsing="false" onAction="#onLoadImage" prefHeight="30.0" prefWidth="136.0" text="Загрузить фото" StackPane.alignment="TOP_LEFT" />
+      <Button fx:id="loadCollectionBtn" layoutX="22.0" layoutY="449.0" mnemonicParsing="false" onAction="#onLoadImage" prefHeight="30.0" prefWidth="125.0" text="Загрузить фото" StackPane.alignment="TOP_LEFT" />
 
        <Button layoutX="546.0" layoutY="529.0" mnemonicParsing="false" onAction="#onLeft" prefHeight="30.0" prefWidth="95.0" text="&lt;--">
            <graphic>
@@ -54,7 +54,10 @@
                <Button fx:id="clearNotesBtn" onAction="#onClearNotes" text="Очистить все" />
            </HBox>
        </VBox>
-       <Button fx:id="saveSlideBtn" layoutX="81.0" layoutY="489.0" onAction="#onSaveSlide" prefHeight="30.0" prefWidth="125.0" text="Сохранить слайд" />
+       <Button fx:id="saveSlideBtn" layoutX="159.0" layoutY="449.0" onAction="#onSaveSlide" prefHeight="30.0" prefWidth="125.0" text="Сохранить слайд" />
+      <Button layoutX="22.0" layoutY="483.0" mnemonicParsing="false" onAction="#onLoadProject" prefHeight="30.0" prefWidth="125.0" text="Загрузить проект" />
+      <Button layoutX="159.0" layoutY="483.0" mnemonicParsing="false" onAction="#onSaveProject" prefHeight="30.0" prefWidth="125.0" text="Сохранить проект" />
+       <Button fx:id="clearAllBtn" layoutX="101.0" layoutY="529.0" onAction="#onClearAll" prefHeight="30.0" prefWidth="104.0" text="Очистить всё" />
 
    </children>
 </Pane>

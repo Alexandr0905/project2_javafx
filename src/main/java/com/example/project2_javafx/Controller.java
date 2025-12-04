@@ -5,6 +5,7 @@ package com.example.project2_javafx;
 //import com.example.project2_javafx.Iterator;
 import com.example.project2_javafx.model.DefaultSlide;
 import com.example.project2_javafx.model.Slide;
+import com.example.project2_javafx.service.ProjectZipIO;
 import com.example.project2_javafx.slides.ConcreteAggregate;
 import com.example.project2_javafx.slides.SlideIterator;
 import com.example.project2_javafx.slides.SlideAggregate;
@@ -34,7 +35,7 @@ public class Controller {
     @FXML private Slider delaySlider;
     @FXML private Label delayLabel;
     @FXML private Button playPauseBtn;
-    @FXML private ListView<Slide> slidesListView;
+    @FXML private ListView<DefaultSlide> slidesListView;
     @FXML private ListView<String> notesListView;
     @FXML private TextArea noteInput;
     @FXML private Button addNoteBtn;
@@ -49,7 +50,7 @@ public class Controller {
     private int totalSlides = 0;
 
     // слайды и итератор
-    private List<Slide> currentSlides;
+    private List<DefaultSlide> currentSlides;
     private ConcreteAggregate conaggr;
     private SlideIterator iter;
 
@@ -83,9 +84,9 @@ public class Controller {
         notesListView.setItems(FXCollections.observableArrayList());
 
         slidesListView.setCellFactory(lv -> {
-            ListCell<Slide> cell = new ListCell<>() {
+            ListCell<DefaultSlide> cell = new ListCell<>() {
                 @Override
-                protected void updateItem(Slide item, boolean empty) {
+                protected void updateItem(DefaultSlide item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || item == null) {
                         setText(null);
@@ -119,7 +120,7 @@ public class Controller {
                 boolean success = false;
                 if (db.hasString()) {
                     String draggedId = db.getString();
-                    Slide draggedSlide = findSlideById(draggedId);
+                    DefaultSlide draggedSlide = findSlideById(draggedId);
                     int dropIndex = cell.getIndex();
 
                     if (draggedSlide != null) {
@@ -199,11 +200,11 @@ public class Controller {
             iter = conaggr.getIterator();
 
             // заполняем ListView
-            ObservableList<Slide> obs = FXCollections.observableArrayList(currentSlides);
+            ObservableList<DefaultSlide> obs = FXCollections.observableArrayList(currentSlides);
             slidesListView.setItems(obs);
 
             // показаем первый слайд
-            Slide first = iter.next();
+            DefaultSlide first = iter.next();
             if (first != null) {
                 showSlide(first);
                 currentSlideNumber = 1;
@@ -214,8 +215,8 @@ public class Controller {
         }
     }
 
-    private Slide findSlideById(String id) {
-        for (Slide s : currentSlides) {
+    private DefaultSlide findSlideById(String id) {
+        for (DefaultSlide s : currentSlides) {
             if (s.getId().equals(id)) return s;
         }
         return null;
@@ -232,7 +233,7 @@ public class Controller {
     }
 
     // показать слайд в ImageView и обновить notesListView
-    private void showSlide(Slide slide) {
+    private void showSlide(DefaultSlide slide) {
         if (slide == null) {
             imageCollection.setImage(null);
             notesListView.getItems().clear();
@@ -254,7 +255,7 @@ public class Controller {
     @FXML
     private void onRight() {
         if (iter == null) return;
-        Slide s = iter.next();
+        DefaultSlide s = iter.next();
         if (s != null) {
             showSlide(s);
             // Обновляем номер и selection в ListView
@@ -268,7 +269,7 @@ public class Controller {
     @FXML
     private void onLeft() {
         if (iter == null) return;
-        Slide s = iter.previous();
+        DefaultSlide s = iter.previous();
         if (s != null) {
             showSlide(s);
             int idx = findSlideIndex(s);
@@ -278,7 +279,7 @@ public class Controller {
         }
     }
 
-    private int findSlideIndex(Slide s) {
+    private int findSlideIndex(DefaultSlide s) {
         if (currentSlides == null || s == null) return -1;
         for (int i = 0; i < currentSlides.size(); i++) {
             if (currentSlides.get(i).getId().equals(s.getId())) return i;
@@ -289,7 +290,7 @@ public class Controller {
     // Добавление заметки к текущему слайду
     @FXML
     private void onAddNote() {
-        Slide sel = slidesListView.getSelectionModel().getSelectedItem();
+        DefaultSlide sel = slidesListView.getSelectionModel().getSelectedItem();
         if (sel == null) return;
         String text = noteInput.getText();
         if (text == null || text.trim().isEmpty()) return;
@@ -302,7 +303,7 @@ public class Controller {
     // Очистить все заметки для текущего слайда
     @FXML
     private void onClearNotes() {
-        Slide sel = slidesListView.getSelectionModel().getSelectedItem();
+        DefaultSlide sel = slidesListView.getSelectionModel().getSelectedItem();
         if (sel == null) return;
         sel.clearNotes();
         notesListView.getItems().clear();
@@ -395,7 +396,7 @@ public class Controller {
 
     @FXML
     private void onSaveSlide() {
-        Slide sel = slidesListView.getSelectionModel().getSelectedItem();
+        DefaultSlide sel = slidesListView.getSelectionModel().getSelectedItem();
         if (sel == null) return;
 
         FileChooser fileChooser = new FileChooser();
@@ -410,19 +411,73 @@ public class Controller {
         }
     }
 
+    @FXML
+    private void onSaveProject() {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Сохранить проект");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("MyShow Project", "*.myshow"));
+        File out = fc.showSaveDialog(getStage());
+        if (out != null) {
+            try {
+                ProjectZipIO.saveProject(out, currentSlides);
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
 
-//    // Вспомогательный метод: показать изображение из File (не используется при итераторе, но оставлен для совместимости)
-//    private void displayImage(File file) {
-//        if (file == null) {
-//            imageCollection.setImage(null);
-//            return;
-//        }
-//        try (FileInputStream fis = new FileInputStream(file)) {
-//            Image image = new Image(fis);
-//            imageCollection.setImage(image);
-//            imageCollection.setPreserveRatio(true);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
+    @FXML
+    private void onLoadProject() {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Загрузить проект");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("MyShow Project", "*.myshow"));
+        File zip = fc.showOpenDialog(getStage());
+        if (zip != null) {
+            try {
+                currentSlides = ProjectZipIO.loadProject(zip);
+                slidesListView.setItems(FXCollections.observableArrayList(currentSlides));
+
+                conaggr = new ConcreteAggregate(currentSlides);
+                iter = conaggr.getIterator();
+
+                totalSlides = currentSlides.size();
+                currentSlideNumber = 1;
+
+                if (!currentSlides.isEmpty()) {
+                    DefaultSlide first = iter.next();
+                    showSlide(first);
+                    slidesListView.getSelectionModel().select(0);
+                }
+
+                updateSlideState();
+
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+    }
+
+    @FXML
+    private void onClearAll() {
+        // остановить слайдшоу если идёт
+        stopSlideshow();
+
+        // очистить коллекции
+        if (currentSlides != null) currentSlides.clear();
+
+        slidesListView.getItems().clear();
+        notesListView.getItems().clear();
+
+        // сбросить изображение
+        imageCollection.setImage(null);
+
+        // сбросить состояние
+        currentSlideNumber = 0;
+        totalSlides = 0;
+        updateSlideState();
+
+        // сбросить итератор и агрегат
+        iter = null;
+        conaggr = null;
+
+        // очистить поле ввода заметок
+        noteInput.clear();
+    }
+
 }

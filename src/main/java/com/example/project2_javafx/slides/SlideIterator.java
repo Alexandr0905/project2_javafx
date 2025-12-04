@@ -1,9 +1,9 @@
 package com.example.project2_javafx.slides;
 
-import com.example.project2_javafx.model.Slide;
+import com.example.project2_javafx.model.DefaultSlide;
 
 public interface SlideIterator {
     boolean hasNext(int x);
-    Slide next();
-    Slide previous();
+    DefaultSlide next();
+    DefaultSlide previous();
 }
