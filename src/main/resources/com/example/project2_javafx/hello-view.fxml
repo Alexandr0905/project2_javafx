@@ -5,17 +5,18 @@
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 
-<Pane fx:id="pane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="573.0" prefWidth="1246.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.project2_javafx.Controller">
+<Pane fx:id="pane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="573.0" prefWidth="1500.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.project2_javafx.Controller">
    <children>
-      <StackPane alignment="CENTER" layoutX="295.0" layoutY="4.0" prefHeight="428.0" prefWidth="700.0">
+      <StackPane alignment="CENTER" layoutX="320.0" layoutY="5.0" prefHeight="428.0" prefWidth="700.0">
          <children>
+                <ImageView />
             <ImageView fx:id="imageCollection" fitHeight="428.0" fitWidth="700.0" pickOnBounds="true" preserveRatio="true">
                <cursor>
                   <Cursor fx:constant="OPEN_HAND" />
                </cursor>
             </ImageView>
-                <ImageView />
          </children>
       </StackPane>
        <fx:define>
@@ -25,30 +26,30 @@
 
       <Button fx:id="loadCollectionBtn" layoutX="22.0" layoutY="449.0" mnemonicParsing="false" onAction="#onLoadImage" prefHeight="30.0" prefWidth="125.0" text="Загрузить фото" StackPane.alignment="TOP_LEFT" />
 
-       <Button layoutX="546.0" layoutY="529.0" mnemonicParsing="false" onAction="#onLeft" prefHeight="30.0" prefWidth="95.0" text="&lt;--">
+       <Button layoutX="571.0" layoutY="522.0" mnemonicParsing="false" onAction="#onLeft" prefHeight="30.0" prefWidth="95.0" text="&lt;--">
            <graphic>
                <ImageView />
            </graphic>
        </Button>
 
-       <Button layoutX="649.0" layoutY="529.0" mnemonicParsing="false" onAction="#onRight" prefHeight="30.0" prefWidth="95.0" text="--&gt;">
+       <Button layoutX="674.0" layoutY="522.0" mnemonicParsing="false" onAction="#onRight" prefHeight="30.0" prefWidth="95.0" text="--&gt;">
            <graphic>
                <ImageView />
            </graphic>
        </Button>
-       <Line endX="-125.0" endY="222.0" layoutX="1141.0" layoutY="351.0" startX="-125.0" startY="-351.0" />
-       <Slider fx:id="delaySlider" blockIncrement="100" layoutX="863.0" layoutY="504.0" max="5000" min="500" value="2000" />
-       <Label fx:id="delayLabel" layoutX="881.0" layoutY="487.0" text="Задержка: 2.0 сек" />
-       <Button fx:id="playPauseBtn" layoutX="881.0" layoutY="529.0" onAction="#onPlayPause" prefHeight="30.0" prefWidth="104.0" text="Play/Stop" />
-       <Label fx:id="stateLabel" layoutX="595.0" layoutY="440.0" style="-fx-font-size: 14px;" text="Слайд: 0 из 0" />
+       <Line endX="-125.0" endY="222.0" layoutX="1401.0" layoutY="351.0" startX="-125.0" startY="-351.0" />
+       <Slider fx:id="delaySlider" blockIncrement="100" layoutX="1085.0" layoutY="84.0" max="5000" min="500" value="2000" />
+       <Label fx:id="delayLabel" layoutX="1103.0" layoutY="67.0" text="Задержка: 2.0 сек" />
+       <Button fx:id="playPauseBtn" layoutX="1103.0" layoutY="109.0" onAction="#onPlayPause" prefHeight="30.0" prefWidth="104.0" text="Play/Stop" />
+       <Label fx:id="stateLabel" layoutX="619.0" layoutY="440.0" style="-fx-font-size: 14px;" text="Слайд: 0 из 0" />
        <!-- Список слайдов (миниатюры/имена) -->
-       <ListView fx:id="slidesListView" layoutX="22.0" layoutY="14.0" prefHeight="428.0" prefWidth="243.0" />
+       <ListView fx:id="slidesListView" layoutX="23.0" layoutY="15.0" prefHeight="420.0" prefWidth="261.0" />
 
        <!-- Правая боковая панель (заметки для выбранного слайда) -->
-       <VBox layoutX="1032.0" layoutY="14.0" prefWidth="200" spacing="8">
+       <VBox layoutX="1286.0" layoutY="15.0" prefHeight="546.0" prefWidth="200" spacing="8">
            <Label text="Заметки к слайду:" />
-           <ListView fx:id="notesListView" prefHeight="260" prefWidth="200" />
-           <TextArea fx:id="noteInput" prefHeight="80" prefWidth="200" promptText="Написать заметку..." wrapText="true" />
+           <ListView fx:id="notesListView" prefHeight="382.0" prefWidth="200" />
+           <TextArea fx:id="noteInput" prefHeight="92.0" prefWidth="200" promptText="Написать заметку..." wrapText="true" />
            <HBox spacing="8">
                <Button fx:id="addNoteBtn" onAction="#onAddNote" text="Добавить" />
                <Button fx:id="clearNotesBtn" onAction="#onClearNotes" text="Очистить все" />
@@ -57,7 +58,26 @@
        <Button fx:id="saveSlideBtn" layoutX="159.0" layoutY="449.0" onAction="#onSaveSlide" prefHeight="30.0" prefWidth="125.0" text="Сохранить слайд" />
       <Button layoutX="22.0" layoutY="483.0" mnemonicParsing="false" onAction="#onLoadProject" prefHeight="30.0" prefWidth="125.0" text="Загрузить проект" />
       <Button layoutX="159.0" layoutY="483.0" mnemonicParsing="false" onAction="#onSaveProject" prefHeight="30.0" prefWidth="125.0" text="Сохранить проект" />
-       <Button fx:id="clearAllBtn" layoutX="101.0" layoutY="529.0" onAction="#onClearAll" prefHeight="30.0" prefWidth="104.0" text="Очистить всё" />
+       <Button fx:id="clearAllBtn" layoutX="22.0" layoutY="529.0" onAction="#onClearAll" prefHeight="30.0" prefWidth="125.0" text="Очистить всё" />
+       <Button fx:id="deleteSlideBtn" layoutX="159.0" layoutY="529.0" onAction="#onDeleteSlide" prefHeight="30.0" prefWidth="125.0" text="Удалить слайд" />
+
+       <Label layoutX="1068.0" layoutY="223.0" text="Эффект:" />
+       <ComboBox fx:id="animationComboBox" layoutX="1123.0" layoutY="219.0" prefWidth="120.0" />
+
+       <Label layoutX="1087.0" layoutY="177.0" text="Скорость (мс):" />
+       <Slider fx:id="animationSpeedSlider" layoutX="1095.0" layoutY="194.0" max="2000" min="100" prefWidth="120.0" value="400" />
+       <Label fx:id="animationSpeedLabel" layoutX="1181.0" layoutY="176.0" text="400 мс" />
+      <Line endX="-39.0" endY="24.0" layoutX="346.0" layoutY="549.0" startX="-39.0" startY="-549.0" />
+      <Line endX="-84.0" endY="286.0" layoutX="1117.0" layoutY="287.0" startX="-84.0" startY="-287.0" />
+      <Label layoutX="1082.0" layoutY="14.0" text="Анимация и слайд-шоу">
+         <font>
+            <Font name="System Bold" size="14.0" />
+         </font>
+      </Label>
+      <Line endX="600.0" layoutX="421.0" layoutY="433.0" startX="-100.0" />
+      <Line endX="600.0" layoutX="421.0" layoutY="5.0" startX="-100.0" />
+      <Line endX="100.0" layoutX="220.0" layoutY="431.0" startX="100.0" startY="-424.5" />
+      <Line endX="101.0" endY="-51.5" layoutX="920.0" layoutY="481.0" startX="101.0" startY="-472.5" />
 
    </children>
 </Pane>

@@ -7,6 +7,7 @@ import com.example.project2_javafx.factory.DefaultSlideFactory;
 import com.example.project2_javafx.factory.SlideFactory;
 import com.example.project2_javafx.model.DefaultSlide;
 import com.example.project2_javafx.model.Slide;
+import com.example.project2_javafx.service.AnimationType;
 import com.example.project2_javafx.service.ProjectZipIO;
 import com.example.project2_javafx.slides.ConcreteAggregate;
 import com.example.project2_javafx.slides.SlideIterator;
@@ -43,6 +44,12 @@ public class Controller {
     @FXML private Button addNoteBtn;
     @FXML private Button clearNotesBtn;
     @FXML private Button saveSlideBtn;
+    @FXML private ComboBox<String> animationComboBox;
+    @FXML private Slider animationSpeedSlider;
+    @FXML private Label animationSpeedLabel;
+
+    private AnimationType animationType = AnimationType.FADE;
+    private long animationDurationMillis = 400; // default
 
 
     // для надписи 0 из 0 слайдов
@@ -155,6 +162,25 @@ public class Controller {
 
             return cell;
         });
+
+        // ComboBox: выбор анимации
+        animationComboBox.getItems().addAll("Fade", "Slide", "Zoom");
+        animationComboBox.setValue("Fade"); // дефолт
+        animationComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+            switch (newVal) {
+                case "Fade" -> animationType = AnimationType.FADE;
+                case "Slide" -> animationType = AnimationType.SLIDE;
+                case "Zoom" -> animationType = AnimationType.ZOOM;
+            }
+        });
+
+        // Slider: скорость анимации
+        animationSpeedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            animationDurationMillis = newVal.longValue();
+            if (animationSpeedLabel != null) {
+                animationSpeedLabel.setText(String.format("%d мс", animationDurationMillis));
+            }
+        });
     }
 
 
@@ -248,6 +274,9 @@ public class Controller {
             Image img = new Image(slide.getImageFile().toURI().toString());
             imageCollection.setImage(img);
             imageCollection.setPreserveRatio(true);
+
+            applyAnimation(imageCollection, animationType);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -389,14 +418,19 @@ public class Controller {
 
     @FXML
     private void onSaveProject() {
+        if (currentSlides == null || currentSlides.isEmpty()) return;
+
         FileChooser fc = new FileChooser();
         fc.setTitle("Сохранить проект");
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("MyShow Project", "*.myshow"));
         File out = fc.showSaveDialog(getStage());
         if (out != null) {
             try {
-                ProjectZipIO.saveProject(out, currentSlides);
-            } catch (Exception e) { e.printStackTrace(); }
+                // передаём текущие параметры анимации
+                ProjectZipIO.saveProject(out, currentSlides, animationType, animationDurationMillis);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -408,7 +442,9 @@ public class Controller {
         File zip = fc.showOpenDialog(getStage());
         if (zip != null) {
             try {
-                currentSlides = ProjectZipIO.loadProject(zip, slideFactory);
+                ProjectZipIO.LoadedProject lp = ProjectZipIO.loadProject(zip, slideFactory);
+
+                currentSlides = lp.slides();
                 slidesListView.setItems(FXCollections.observableArrayList(currentSlides));
 
                 conaggr = new ConcreteAggregate(currentSlides);
@@ -417,12 +453,22 @@ public class Controller {
                 totalSlides = currentSlides.size();
                 currentSlideNumber = 1;
 
+                // --- Применяем сохранённые параметры анимации
+                animationType = lp.animationType();
+                animationDurationMillis = lp.animationSpeed();
+
+                // Обновляем UI
+                animationComboBox.setValue(animationType.name().substring(0,1) + animationType.name().substring(1).toLowerCase());
+                animationSpeedSlider.setValue(animationDurationMillis);
+                animationSpeedLabel.setText(animationDurationMillis + " мс");
+
+                // Показ первого слайда
                 if (!currentSlides.isEmpty()) {
                     DefaultSlide first = iter.next();
                     showSlide(first);
                     slidesListView.getSelectionModel().select(0);
+                    currentSlideNumber = 1;
                 }
-
                 updateSlideState();
 
             } catch (Exception e) { e.printStackTrace(); }
@@ -454,6 +500,78 @@ public class Controller {
 
         // очистить поле ввода заметок
         noteInput.clear();
+
+        //сброс анимации
+        animationDurationMillis = 400;
+        if (animationSpeedLabel != null) {
+            animationSpeedLabel.setText(String.format("%d мс", animationDurationMillis));
+        }
     }
 
+    @FXML
+    private void onDeleteSlide() {
+        DefaultSlide selected = slidesListView.getSelectionModel().getSelectedItem();
+        if (selected == null) return; // ничего не выбрано
+
+        // Удаляем из коллекции слайдов
+        currentSlides.remove(selected);
+
+        // Обновляем ListView
+        slidesListView.getItems().setAll(currentSlides);
+
+        // Пересоздаём агрегат и итератор
+        conaggr = new ConcreteAggregate(currentSlides);
+        iter = conaggr.getIterator();
+
+        // Обновляем Builder-индикатор
+        totalSlides = currentSlides.size();
+        if (!currentSlides.isEmpty()) {
+            // Выбираем первый слайд
+            DefaultSlide first = iter.next();
+            showSlide(first);
+            slidesListView.getSelectionModel().select(0);
+            currentSlideNumber = 1;
+        } else {
+            // Если слайдов больше нет
+            imageCollection.setImage(null);
+            notesListView.getItems().clear();
+            currentSlideNumber = 0;
+        }
+        updateSlideState();
+    }
+
+    private void applyAnimation(ImageView imageView, AnimationType type) {
+        switch (type) {
+            case FADE -> playFade(imageView);
+            case SLIDE -> playSlide(imageView);
+            case ZOOM -> playZoom(imageView);
+        }
+    }
+
+    private void playFade(ImageView iv) {
+        iv.setOpacity(0);
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(Duration.millis(animationDurationMillis), iv);
+        ft.setFromValue(0);
+        ft.setToValue(1);
+        ft.play();
+    }
+
+    private void playSlide(ImageView iv) {
+        iv.setTranslateX(100);
+        javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(Duration.millis(animationDurationMillis), iv);
+        tt.setFromX(100);
+        tt.setToX(0);
+        tt.play();
+    }
+
+    private void playZoom(ImageView iv) {
+        iv.setScaleX(0.85);
+        iv.setScaleY(0.85);
+        javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(Duration.millis(animationDurationMillis), iv);
+        st.setFromX(0.85);
+        st.setFromY(0.85);
+        st.setToX(1);
+        st.setToY(1);
+        st.play();
+    }
 }
