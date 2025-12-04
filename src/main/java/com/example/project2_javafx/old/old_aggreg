@@ -1,0 +1,5 @@
+package com.example.project2_javafx;
+
+public interface Aggregate {
+    public Iterator getIterator();
+}

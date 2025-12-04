@@ -1,0 +1,82 @@
+package com.example.project2_javafx;
+
+import javafx.scene.image.Image;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ConcreteAggregate implements Aggregate {
+
+    private final List<File> files;
+
+    // Конструктор из списка файлов
+    public ConcreteAggregate(List<File> files) {
+        // делаем копию списка, чтобы избежать внешних изменений
+        this.files = files == null ? new ArrayList<>() : new ArrayList<>(files);
+    }
+
+    @Override
+    public Iterator getIterator() {
+        return new ImageIterator();
+    }
+
+    // внутренний итератор
+    private class ImageIterator implements Iterator {
+        private int current = -1; // текущая позиция (индекс последнего показанного). -1 значит ничего ещё не показано.
+
+        // безопасно получить Image по индексу; если файлов нет, вернёт null
+        private Image getImage(int index) {
+            if (files == null || files.isEmpty()) return null;
+            // нормализация индекса в пределах [0, files.size()-1]
+            int n = files.size();
+            int idx = ((index % n) + n) % n;
+            File f = files.get(idx);
+            try {
+                return new Image(f.toURI().toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        public boolean hasNext(int x) {
+            if (files == null || files.isEmpty()) return false;
+            if (x == 1) {
+                // есть ли следующий (т.е. хотя бы один файл) — всегда true при не пустом списке,
+                // но можно проверить наличие работоспособного Image:
+                int nextIndex = current + 1;
+                Image img = getImage(nextIndex);
+                return img != null && !img.isError();
+            } else if (x == -1) {
+                int prevIndex = current - 1;
+                Image img = getImage(prevIndex);
+                return img != null && !img.isError();
+            } else {
+                // для общего смещения x
+                int idx = current + x;
+                Image img = getImage(idx);
+                return img != null && !img.isError();
+            }
+        }
+
+        @Override
+        public Image next() {
+            if (files == null || files.isEmpty()) return null;
+            // движение вперед: увеличиваем current и возвращаем изображение,
+            // если индекс выходит за пределы — обернёмся к первому (wrap-around)
+            current = (current + 1) % files.size();
+            return getImage(current);
+        }
+
+        @Override
+        public Image preview() {
+            if (files == null || files.isEmpty()) return null;
+            // движение назад: уменьшаем current; если ушли в отрицательное — обернёмся в конец
+            current = (current - 1) % files.size();
+            if (current < 0) current += files.size();
+            return getImage(current);
+        }
+    }
+}
