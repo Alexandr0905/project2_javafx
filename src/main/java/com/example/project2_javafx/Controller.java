@@ -61,15 +61,6 @@ public class Controller {
         return (Stage) pane.getScene().getWindow();
     }
 
-//    @FXML
-//    private void initialize() {
-//        updateDelayLabels(delaySlider.getValue());
-//
-//        delaySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-//            updateDelayLabels(newVal.doubleValue());
-//            setSlideshowDelayMillis(newVal.longValue());
-//        });
-//    }
 
     @FXML
     private void initialize() {
@@ -89,8 +80,75 @@ public class Controller {
             }
         });
 
-
         notesListView.setItems(FXCollections.observableArrayList());
+
+        slidesListView.setCellFactory(lv -> {
+            ListCell<Slide> cell = new ListCell<>() {
+                @Override
+                protected void updateItem(Slide item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(item.toString()); // можно заменить на миниатюру
+                    }
+                }
+            };
+
+            // Drag detected
+            cell.setOnDragDetected(event -> {
+                if (cell.getItem() == null) return;
+                javafx.scene.input.Dragboard db = cell.startDragAndDrop(javafx.scene.input.TransferMode.MOVE);
+                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                content.putString(cell.getItem().getId());
+                db.setContent(content);
+                event.consume();
+            });
+
+            // Drag over
+            cell.setOnDragOver(event -> {
+                if (event.getGestureSource() != cell && event.getDragboard().hasString()) {
+                    event.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
+                }
+                event.consume();
+            });
+
+            // Drop
+            cell.setOnDragDropped(event -> {
+                javafx.scene.input.Dragboard db = event.getDragboard();
+                boolean success = false;
+                if (db.hasString()) {
+                    String draggedId = db.getString();
+                    Slide draggedSlide = findSlideById(draggedId);
+                    int dropIndex = cell.getIndex();
+
+                    if (draggedSlide != null) {
+                        int oldIndex = currentSlides.indexOf(draggedSlide);
+                        if (oldIndex != dropIndex) {
+                            currentSlides.remove(oldIndex);
+                            if (dropIndex > currentSlides.size()) dropIndex = currentSlides.size();
+                            currentSlides.add(dropIndex, draggedSlide);
+
+                            // обновляем ListView
+                            slidesListView.getItems().setAll(currentSlides);
+
+                            // синхронизируем итератор
+                            conaggr = new ConcreteAggregate(currentSlides);
+                            iter = conaggr.getIterator();
+
+                            // обновляем currentSlideNumber
+                            currentSlideNumber = slidesListView.getSelectionModel().getSelectedIndex() + 1;
+                            updateSlideState();
+                        }
+                    }
+                    success = true;
+                }
+                event.setDropCompleted(success);
+                event.consume();
+            });
+
+            return cell;
+        });
     }
 
 
@@ -156,6 +214,12 @@ public class Controller {
         }
     }
 
+    private Slide findSlideById(String id) {
+        for (Slide s : currentSlides) {
+            if (s.getId().equals(id)) return s;
+        }
+        return null;
+    }
 
     // обновление статуса и кол-ва слайдов 0 из 0
     private void updateSlideState() {
