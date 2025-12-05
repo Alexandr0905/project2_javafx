@@ -21,10 +21,12 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.scene.media.MediaPlayer;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import javax.print.attribute.standard.Media;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
@@ -47,6 +49,12 @@ public class Controller {
     @FXML private ComboBox<String> animationComboBox;
     @FXML private Slider animationSpeedSlider;
     @FXML private Label animationSpeedLabel;
+    @FXML private Button loadMusicBtn;
+    @FXML private Label musicLabel;
+
+    // Music
+    private File currentMusicFile = null;
+    private MediaPlayer mediaPlayer = null;
 
     private AnimationType animationType = AnimationType.FADE;
     private long animationDurationMillis = 400; // default
@@ -82,14 +90,13 @@ public class Controller {
             updateDelayLabels(newVal.doubleValue());
             setSlideshowDelayMillis(newVal.longValue());
         });
-        // Настроим ListView для слайдов: отображаем имя файла (toString() в DefaultSlide уже возвращает имя файла)
         slidesListView.setItems(FXCollections.observableArrayList());
         slidesListView.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) -> {
             if (newSel != null) {
                 showSlide(newSel);
                 int idx = slidesListView.getSelectionModel().getSelectedIndex();
                 currentSlideNumber = idx + 1;
-                updateSlideState(); // ваш builder-метод (предполагается реализован)
+                updateSlideState();
             }
         });
 
@@ -108,7 +115,6 @@ public class Controller {
                 }
             };
 
-            // Drag detected
             cell.setOnDragDetected(event -> {
                 if (cell.getItem() == null) return;
                 javafx.scene.input.Dragboard db = cell.startDragAndDrop(javafx.scene.input.TransferMode.MOVE);
@@ -118,7 +124,6 @@ public class Controller {
                 event.consume();
             });
 
-            // Drag over
             cell.setOnDragOver(event -> {
                 if (event.getGestureSource() != cell && event.getDragboard().hasString()) {
                     event.acceptTransferModes(javafx.scene.input.TransferMode.MOVE);
@@ -126,7 +131,6 @@ public class Controller {
                 event.consume();
             });
 
-            // Drop
             cell.setOnDragDropped(event -> {
                 javafx.scene.input.Dragboard db = event.getDragboard();
                 boolean success = false;
@@ -163,7 +167,7 @@ public class Controller {
             return cell;
         });
 
-        // ComboBox: выбор анимации
+        // выбор анимации
         animationComboBox.getItems().addAll("Fade", "Slide", "Zoom");
         animationComboBox.setValue("Fade"); // дефолт
         animationComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -174,7 +178,7 @@ public class Controller {
             }
         });
 
-        // Slider: скорость анимации
+        // скорость анимации
         animationSpeedSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
             animationDurationMillis = newVal.longValue();
             if (animationSpeedLabel != null) {
@@ -182,33 +186,6 @@ public class Controller {
             }
         });
     }
-
-
-//    // загрузка фото
-//    @FXML
-//    private void onLoadImage() {
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.getExtensionFilters().add(
-//                new FileChooser.ExtensionFilter("Изображения", "*.jpg", "*.jpeg", "*.png", "*.webp")
-//        );
-//
-//        currentFiles = fileChooser.showOpenMultipleDialog(getStage());
-//        if (currentFiles != null && !currentFiles.isEmpty()) {
-//            // создаём коллекцию и итератор
-//            conaggr = new ConcreteAggregate(currentFiles);
-//            iter = conaggr.getIterator();
-//            // сразу показать первый кадр
-//            Image img = iter.next();
-//            if (img != null && !img.isError()) {
-//                imageCollection.setImage(img);
-//                imageCollection.setPreserveRatio(true);
-//            }
-//            // обновляем состояние
-//            currentSlideNumber = 1;
-//            totalSlides = currentFiles.size();
-//            updateSlideState();
-//        }
-//    }
 
     // обработчик загрузки
     @FXML
@@ -263,7 +240,6 @@ public class Controller {
         stateLabel.setText(state.getText());
     }
 
-    // показать слайд в ImageView и обновить notesListView
     private void showSlide(DefaultSlide slide) {
         if (slide == null) {
             imageCollection.setImage(null);
@@ -285,14 +261,12 @@ public class Controller {
         notesListView.getItems().setAll(slide.getNotes());
     }
 
-    // Next/Prev должны теперь использовать iter.next()/previous() и синхронизировать selection
     @FXML
     private void onRight() {
         if (iter == null) return;
         DefaultSlide s = iter.next();
         if (s != null) {
             showSlide(s);
-            // Обновляем номер и selection в ListView
             int idx = findSlideIndex(s);
             currentSlideNumber = idx + 1;
             slidesListView.getSelectionModel().select(idx);
@@ -353,6 +327,12 @@ public class Controller {
         slideshow.setCycleCount(Timeline.INDEFINITE);
         slideshow.play();
 
+        // музыка
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.play();
+        }
+
         playPauseBtn.setText("Pause");
     }
 
@@ -361,6 +341,10 @@ public class Controller {
         if (slideshow != null) {
             slideshow.stop();
             slideshow = null;
+        }
+
+        if (mediaPlayer != null) {
+            mediaPlayer.pause();
         }
 
         if (playPauseBtn != null)
@@ -427,7 +411,7 @@ public class Controller {
         if (out != null) {
             try {
                 // передаём текущие параметры анимации
-                ProjectZipIO.saveProject(out, currentSlides, animationType, animationDurationMillis);
+                ProjectZipIO.saveProject(out, currentSlides, animationType, animationDurationMillis, currentMusicFile);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -453,22 +437,26 @@ public class Controller {
                 totalSlides = currentSlides.size();
                 currentSlideNumber = 1;
 
-                // --- Применяем сохранённые параметры анимации
                 animationType = lp.animationType();
                 animationDurationMillis = lp.animationSpeed();
 
-                // Обновляем UI
+                currentMusicFile = lp.musicFile();
+
                 animationComboBox.setValue(animationType.name().substring(0,1) + animationType.name().substring(1).toLowerCase());
                 animationSpeedSlider.setValue(animationDurationMillis);
                 animationSpeedLabel.setText(animationDurationMillis + " мс");
 
-                // Показ первого слайда
                 if (!currentSlides.isEmpty()) {
                     DefaultSlide first = iter.next();
                     showSlide(first);
                     slidesListView.getSelectionModel().select(0);
                     currentSlideNumber = 1;
                 }
+
+                if (currentMusicFile != null) {
+                    playMusic(currentMusicFile);
+                }
+
                 updateSlideState();
 
             } catch (Exception e) { e.printStackTrace(); }
@@ -477,24 +465,19 @@ public class Controller {
 
     @FXML
     private void onClearAll() {
-        // остановить слайдшоу если идёт
         stopSlideshow();
 
-        // очистить коллекции
         if (currentSlides != null) currentSlides.clear();
 
         slidesListView.getItems().clear();
         notesListView.getItems().clear();
 
-        // сбросить изображение
         imageCollection.setImage(null);
 
-        // сбросить состояние
         currentSlideNumber = 0;
         totalSlides = 0;
         updateSlideState();
 
-        // сбросить итератор и агрегат
         iter = null;
         conaggr = null;
 
@@ -511,28 +494,22 @@ public class Controller {
     @FXML
     private void onDeleteSlide() {
         DefaultSlide selected = slidesListView.getSelectionModel().getSelectedItem();
-        if (selected == null) return; // ничего не выбрано
+        if (selected == null) return;
 
-        // Удаляем из коллекции слайдов
         currentSlides.remove(selected);
 
-        // Обновляем ListView
         slidesListView.getItems().setAll(currentSlides);
 
-        // Пересоздаём агрегат и итератор
         conaggr = new ConcreteAggregate(currentSlides);
         iter = conaggr.getIterator();
 
-        // Обновляем Builder-индикатор
         totalSlides = currentSlides.size();
         if (!currentSlides.isEmpty()) {
-            // Выбираем первый слайд
             DefaultSlide first = iter.next();
             showSlide(first);
             slidesListView.getSelectionModel().select(0);
             currentSlideNumber = 1;
         } else {
-            // Если слайдов больше нет
             imageCollection.setImage(null);
             notesListView.getItems().clear();
             currentSlideNumber = 0;
@@ -573,5 +550,37 @@ public class Controller {
         st.setToX(1);
         st.setToY(1);
         st.play();
+    }
+
+    @FXML
+    private void onChooseMusic() {
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Выбрать музыкальный файл");
+        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Audio", "*.mp3", "*.wav", "*.aac"));
+
+        File file = fc.showOpenDialog(getStage());
+        if (file != null) {
+            currentMusicFile = file;
+
+            musicLabel.setText("Музыка: " + file.getName());
+
+            playMusic(file);
+        }
+    }
+
+    private void playMusic(File f) {
+        try {
+            if (mediaPlayer != null) {
+                mediaPlayer.stop();
+            }
+
+            javafx.scene.media.Media media = new javafx.scene.media.Media(f.toURI().toString());
+            mediaPlayer = new javafx.scene.media.MediaPlayer(media);
+            mediaPlayer.setCycleCount(javafx.scene.media.MediaPlayer.INDEFINITE);
+            mediaPlayer.play();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

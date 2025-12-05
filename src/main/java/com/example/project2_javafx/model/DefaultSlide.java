@@ -48,7 +48,6 @@ public class DefaultSlide implements Slide {
 
     @Override
     public String toString() {
-        // для ListView отображаем имя файла (можно изменить)
         return imageFile != null ? imageFile.getName() : id;
     }
 }

@@ -3,6 +3,7 @@ module com.example.project2_javafx {
     requires javafx.fxml;
     requires java.desktop;
     requires javafx.swing;
+    requires javafx.media;
 //    requires com.example.project2_javafx;
 
 

@@ -78,6 +78,8 @@
       <Line endX="600.0" layoutX="421.0" layoutY="5.0" startX="-100.0" />
       <Line endX="100.0" layoutX="220.0" layoutY="431.0" startX="100.0" startY="-424.5" />
       <Line endX="101.0" endY="-51.5" layoutX="920.0" layoutY="481.0" startX="101.0" startY="-472.5" />
+<!--       <Label fx:id="musicLabel" layoutX="1096.0" layoutY="339.0" text="Музыка: не выбрана"/>-->
+       <Button fx:id="loadMusicBtn" layoutX="1094.0" layoutY="287.0" onAction="#onChooseMusic" text="Загрузить музыку" />
 
    </children>
 </Pane>

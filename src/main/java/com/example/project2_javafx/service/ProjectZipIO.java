@@ -14,19 +14,23 @@ public class ProjectZipIO
     public static void saveProject(File outZipFile,
                                    List<DefaultSlide> slides,
                                    AnimationType animationType,
-                                   long animationSpeedMillis) throws Exception {
+                                   long animationSpeedMillis,
+                                   File musicFile) throws Exception {
 
         Path tempDir = Files.createTempDirectory("myshow_project_");
 
-        // 1) META
+        // meta
         File meta = new File(tempDir.toFile(), "meta.txt");
         try (PrintWriter pw = new PrintWriter(meta)) {
             pw.println("slideCount=" + slides.size());
             pw.println("animationType=" + (animationType != null ? animationType.name() : "FADE"));
             pw.println("animationSpeed=" + animationSpeedMillis);
+
+            // music
+            pw.println("musicFile=" + (musicFile != null ? musicFile.getName() : ""));
         }
 
-        // 2) SLIDES and NOTES
+        // slides and notes
         File slidesDir = new File(tempDir.toFile(), "slides");
         slidesDir.mkdirs();
         File notesDir = new File(tempDir.toFile(), "notes");
@@ -36,19 +40,29 @@ public class ProjectZipIO
             DefaultSlide slide = slides.get(i);
             String imgName = String.format("slide_%04d.png", i + 1);
 
-            // copy image
+            // image
             Files.copy(slide.getImageFile().toPath(),
                     new File(slidesDir, imgName).toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
-            // save notes
+            // notes
             File noteFile = new File(notesDir, imgName.replace(".png", ".txt"));
             try (PrintWriter npw = new PrintWriter(noteFile)) {
                 for (String note : slide.getNotes()) npw.println(note);
             }
         }
 
-        // 3) zip the tempDir into outZipFile
+        // music dir
+        if (musicFile != null && musicFile.exists()) {
+            File musicDir = new File(tempDir.toFile(), "music");
+            musicDir.mkdirs();
+
+            Files.copy(musicFile.toPath(),
+                    new File(musicDir, musicFile.getName()).toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        // zip
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outZipFile))) {
             Path base = tempDir;
             Files.walk(base)
@@ -59,11 +73,11 @@ public class ProjectZipIO
                             zos.putNextEntry(new ZipEntry(entryName));
                             Files.copy(path, zos);
                             zos.closeEntry();
-                        } catch (Exception ignored) { }
+                        } catch (Exception ignored) {}
                     });
         }
 
-        // 4) cleanup
+        // clean
         Files.walk(tempDir)
                 .sorted(Comparator.reverseOrder())
                 .forEach(p -> p.toFile().delete());
@@ -71,7 +85,8 @@ public class ProjectZipIO
 
     public record LoadedProject(List<DefaultSlide> slides,
                                 AnimationType animationType,
-                                long animationSpeed) {}
+                                long animationSpeed,
+                                File musicFile) {}
 
     // загрузка проекта
     public static LoadedProject loadProject(File zipFile, SlideFactory factory) throws Exception {
@@ -83,28 +98,31 @@ public class ProjectZipIO
         File meta = new File(tempDir.toFile(), "meta.txt");
         List<String> lines = Files.readAllLines(meta.toPath());
 
-        // --- Читаем количество слайдов
         int slideCount = 0;
-        AnimationType loadedAnimationType = AnimationType.FADE; // дефолт
-        long loadedAnimationSpeed = 400; // дефолт
+        AnimationType loadedAnimationType = AnimationType.FADE;
+        long loadedAnimationSpeed = 400;
 
+        String musicName = "";
+
+        // meta read
         for (String line : lines) {
-            if (line.startsWith("slideCount=")) {
+            if (line.startsWith("slideCount="))
                 slideCount = Integer.parseInt(line.split("=")[1].trim());
-            }
-            if (line.startsWith("animationType=")) {
+
+            if (line.startsWith("animationType="))
                 loadedAnimationType = AnimationType.valueOf(line.split("=")[1].trim());
-            }
-            if (line.startsWith("animationSpeed=")) {
+
+            if (line.startsWith("animationSpeed="))
                 loadedAnimationSpeed = Long.parseLong(line.split("=")[1].trim());
-            }
+
+            if (line.startsWith("musicFile="))
+                musicName = line.split("=")[1].trim();
         }
 
-        // --- Загружаем слайды
+        // load slides
         List<DefaultSlide> slides = new ArrayList<>();
 
         for (int i = 1; i <= slideCount; i++) {
-
             String imgName = String.format("slide_%04d.png", i);
 
             File imgFile = new File(tempDir.toFile(), "slides/" + imgName);
@@ -114,12 +132,20 @@ public class ProjectZipIO
                     ? Files.readAllLines(noteFile.toPath())
                     : List.of();
 
-            DefaultSlide slide = factory.createSlideWithNotes(imgFile, notes);
-
-            slides.add(slide);
+            DefaultSlide sl = factory.createSlideWithNotes(imgFile, notes);
+            slides.add(sl);
         }
 
-        return new LoadedProject(slides, loadedAnimationType, loadedAnimationSpeed);
+        // load music
+        File musicFile = null;
+        if (!musicName.isEmpty()) {
+            File musicDir = new File(tempDir.toFile(), "music/" + musicName);
+            if (musicDir.exists()) {
+                musicFile = musicDir;
+            }
+        }
+
+        return new LoadedProject(slides, loadedAnimationType, loadedAnimationSpeed, musicFile);
     }
 
     // архивирование
@@ -143,16 +169,24 @@ public class ProjectZipIO
     }
 
     // разархивирование
-    private static void unzip(File zipFile, File destDir) throws Exception {
-        java.util.zip.ZipInputStream zis = new java.util.zip.ZipInputStream(new java.io.FileInputStream(zipFile));
-        java.util.zip.ZipEntry entry;
-        while ((entry = zis.getNextEntry()) != null) {
-            File newFile = new File(destDir, entry.getName());
-            newFile.getParentFile().mkdirs();
-            java.nio.file.Files.copy(zis, newFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            zis.closeEntry();
+    private static void unzip(File zipFile, File targetDir) throws Exception {
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+
+                File outFile = new File(targetDir, entry.getName());
+
+                if (entry.isDirectory()) {
+                    outFile.mkdirs();
+                } else {
+                    outFile.getParentFile().mkdirs();
+                    Files.copy(zis, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+
+                zis.closeEntry();
+            }
         }
-        zis.close();
     }
 
     // удаление папки
